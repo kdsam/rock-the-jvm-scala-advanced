@@ -82,6 +82,71 @@ object ThreadCommunication extends App {
 //  smartProdCons
 
   /*
+    producer -> [ ? ? ? ] -> consumer
+
+
+   */
+
+  def prodConsLargeBuffer(): Unit = {
+    val buffer: mutable.Queue[Int] = new mutable.Queue[Int]
+    val capacity = 3
+
+    val consumer = new Thread(() => {
+      val random = new Random()
+
+      while(true) {
+        buffer.synchronized {
+          if (buffer.isEmpty) {
+            println("[consumer] buffer empty, waiting...")
+            buffer.wait()
+          }
+
+          // there must be at least ONE value in the buffer
+          val x = buffer.dequeue()
+          println("[consumer] consumed " + x)
+
+          // hey producer, there's empty space available, are you lazy?!
+          buffer.notify()
+        }
+        Thread.sleep(random.nextInt(500))
+      }
+    })
+
+
+    val producer = new Thread(() => {
+      val random = new Random()
+      var i = 0
+
+      while(true) {
+        buffer.synchronized {
+          if (buffer.size == capacity) {
+            println("[producer] buffer is full, waiting...")
+            buffer.wait()
+          }
+
+          // there must be at least ONE EMPTY SPACE in the buffer
+          println("[producer] producing " + i)
+          buffer.enqueue(i)
+
+          // hey consumer, new food for you!
+          buffer.notify()
+
+          i += 1
+        }
+
+        Thread.sleep(random.nextInt(500))
+      }
+    })
+
+    consumer.start()
+    producer.start()
+
+  }
+
+//  prodConsLargeBuffer()
+
+
+  /*
     Prod-cons, level 3
 
         producer1 -> [  ? ? ? ] -> consumer1
@@ -151,7 +216,7 @@ object ThreadCommunication extends App {
     (1 to nProducers).foreach(i => new Producer(i, buffer, capacity).start())
   }
 
-//  multiProdCons(3, 3)
+  //  multiProdCons(3, 3)
 
   /*
     Exercises.
@@ -181,7 +246,7 @@ object ThreadCommunication extends App {
     }).start()
   }
 
-//  testNotifyAll()
+  //  testNotifyAll()
 
   // 2 - deadlock
   case class Friend(name: String) {
@@ -221,11 +286,10 @@ object ThreadCommunication extends App {
 
   // 3 - livelock
 
-//  new Thread(() => sam.bow(pierre)).start() // sam's lock, then pierre's lock
-//  new Thread(() => pierre.bow(sam)).start() // pierre's lock, then sam's lock
+  //  new Thread(() => sam.bow(pierre)).start() // sam's lock, then pierre's lock
+  //  new Thread(() => pierre.bow(sam)).start() // pierre's lock, then sam's lock
 
   new Thread(() => sam.pass(pierre)).start()
   new Thread(() => pierre.pass(sam)).start()
-
 
 }
