@@ -1,5 +1,7 @@
 package lectures.part4implicits
 
+import sun.jvm.hotspot.ui.tree.SimpleTreeGroupNode
+
 object TypeClasses extends App {
 
   trait HTMLWritable {
@@ -34,7 +36,7 @@ object TypeClasses extends App {
     def serialize(value: T): String
   }
 
-  object UserSerializer extends HTMLSerializer[User] {
+  implicit object UserSerializer extends HTMLSerializer[User] {
     override def serialize(user: User): String = s"<div>${user.name} (${user.age} yo) <a href=${user.email}/> </div>"
   }
 
@@ -52,27 +54,49 @@ object TypeClasses extends App {
     override def serialize(user: User): String = s"<div>${user.name} </div>"
   }
 
-  // TYPE CLASS
-  trait MyTypeClassTemplate[T] {
-    def action(value: T): String
+  implicit object IntSerializer extends HTMLSerializer[Int] {
+    override def serialize(value: Int): String = s"<div style: color=blue>$value</div>"
+  }
+  // part 3
+  implicit class HTMLEnrichment[T](value: T) {
+    def toHTML(implicit serializer: HTMLSerializer[T]): String = serializer.serialize(value)
   }
 
-  /**
-    * Equality
-    */
+  println(john.toHTML)  //println(new HTMLEnrichment[User](john).toHTML(UserSerializer))
+  // COOL!
+  /*
+    - extend to new types
+    - choose implementation
+    - super expressive
+   */
 
-  trait Equal[T] {
-    def apply(a: T, b: T): Boolean
+  println(2.toHTML)
+  println(john.toHTML(PartialUserSerializer))
+
+  /*
+    - type class itself --- HTMLSerializer[T] {...}
+    - type class instances (some of which are implicit) --- UserSerializer, IntSerializer
+    - conversion with implicit classses --- HTMLEnrichment
+   */
+
+  // context bounds
+  def htmlBoilerPlate[T](content: T)(implicit serializer: HTMLSerializer[T]): String =
+    s"<html><body> ${content.toHTML(serializer)}</body></html>"
+
+  def htmlSugar[T: HTMLSerializer](content: T): String = {
+    val serializer = implicitly[HTMLSerializer[T]]
+    // use serializer
+    s"<html><body> ${content.toHTML(serializer)}</body></html>"
   }
 
-  object NameEquality extends Equal[User] {
-    override def apply(a: User, b: User): Boolean = a.name == b.name
-  }
+  // implicitly
+  case class Permissions(mask: String)
+  implicit val defaultPermission: Permissions = Permissions("0744")
 
-  object FullEquality extends Equal[User] {
-    override def apply(a: User, b: User): Boolean = a.name == b.name && a.email == b.email
-  }
+  // in some other part of the code
+  val standardPerms = implicitly[Permissions]
+  println(standardPerms)
 
-  // part 2
-
+  println(htmlSugar(john))
 }
+
