@@ -1,7 +1,5 @@
 package lectures.part4implicits
 
-import sun.jvm.hotspot.ui.tree.SimpleTreeGroupNode
-
 object TypeClasses extends App {
 
   trait HTMLWritable {
