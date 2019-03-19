@@ -115,7 +115,7 @@ object JSONSerialization extends App {
 //      "user" -> UserConverter.convert(feed.user),   // TODO
       "posts" -> JSONArray(feed.posts.map(_.toJSON))
 //      "posts" -> JSONArray(feed.posts.map(PostConverter.convert)) //  TODO
-    ))c
+    ))
   }
 
 
